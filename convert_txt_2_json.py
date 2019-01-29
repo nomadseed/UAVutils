@@ -70,33 +70,69 @@ def convertAnnotationVIVA(filename,gt_array,annodict,filelabel):
         
     return newdict
 
+def divideList(jsonlist,trainlabel,testlabel):
+    trainlist=[]
+    testlist=[]
+    trainlabel=[i.split('_')[0] for i in trainlabel]
+    testlabel=[i.split('_')[0] for i in testlabel]
+    
+    for i in jsonlist:
+        if 'whole' in i and i.split('_')[0] in trainlabel:
+            trainlist.append(i)
+        elif 'whole' in i and i.split('_')[0] in testlabel:
+            testlist.append(i)
+    
+    return trainlist, testlist
+
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--file_path', type=str, 
         default='D:/Private Manager/Personal File/uOttawa/Lab works/2019 winter/UAV project/GT', 
         help="select the file path for txt groundtruth")
+    parser.add_argument('--train_path', type=str, 
+        default='D:/Private Manager/Personal File/uOttawa/Lab works/2019 winter/UAV project/M_attr/train', 
+        help="select the file path for training list")
+    parser.add_argument('--test_path', type=str, 
+        default='D:/Private Manager/Personal File/uOttawa/Lab works/2019 winter/UAV project/M_attr/test', 
+        help="select the file path for testing list")
     parser.add_argument('--file_label',type=str,default='_gt_whole.txt',
                         help='select the label for the txt ground truth that to be convert,default=_gt_whole.txt')
-    parser.add_argument('--save_name',type=str,default='UAV-benchmark-M-VIVA-format.json',
+    parser.add_argument('--save_name',type=str,default='UAV-benchmark-M-VIVA.json',
                         help='the saving name for the new groundtruth file')
     args = parser.parse_args()
     filepath=args.file_path
+    trainpath=args.train_path
+    testpath=args.test_path
     filelabel=args.file_label
     savename=args.save_name
     
     jsonlist=os.listdir(filepath)
+    trainlabel=os.listdir(trainpath)
+    testlabel=os.listdir(testpath)
+    trainlist, testlist = divideList(jsonlist,trainlabel,testlabel)
     
+   
+    # create training benchmark
     annodict={}
-    for filename in jsonlist:
+    for filename in trainlist:
         if filelabel not in filename:
             continue
         gt_array=np.loadtxt(os.path.join(filepath,filename),delimiter=',').astype(np.float32)
         annodict=convertAnnotationVIVA(filename,gt_array,annodict,filelabel)
 
-    with open(os.path.join(filepath,savename),'w') as fp:
+    with open(os.path.join(filepath,savename.replace('.json','-train.json')),'w') as fp:
         json.dump(annodict,fp,sort_keys=True, indent=4)
 
-    
-    
+    # create testing benchmark
+    annodict={}
+    for filename in testlist:
+        if filelabel not in filename:
+            continue
+        gt_array=np.loadtxt(os.path.join(filepath,filename),delimiter=',').astype(np.float32)
+        annodict=convertAnnotationVIVA(filename,gt_array,annodict,filelabel)
+
+    with open(os.path.join(filepath,savename.replace('.json','-test.json')),'w') as fp:
+        json.dump(annodict,fp,sort_keys=True, indent=4)
+
     
 """End of file"""
